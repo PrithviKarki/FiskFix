@@ -1,0 +1,20 @@
+/* src/index.css */
+
+/* We are keeping the font and removing all layout styles */
+:root {
+  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* We are removing 'display: flex', 'place-items: center', 
+  and 'min-width' to let our App.jsx control the layout.
+*/
+body {
+  margin: 0;
+  min-height: 100vh; 
+}
