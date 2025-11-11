@@ -8,11 +8,9 @@ import NewRequestForm from './pages/NewRequestForm.jsx';
 
 // This is the "control center" component
 export default function App() {
-  // 'page' state tracks which page to show: 'login', 'dashboard', or 'newRequest'
   const [page, setPage] = useState('login');
-
-  // 'user' state tracks who is logged in (null if no one)
-  const [user, setUser] = useState(null);
+  const [user, setUser] = useState(null); // Will hold the user object { _id, email, role }
+  const [token, setToken] = useState(null); // Will hold the login token
 
   // --- Event Handlers ---
 
@@ -20,9 +18,16 @@ export default function App() {
    * Called from LoginPage.
    * Sets the user and navigates to the dashboard.
    */
-  const handleLogin = (username) => {
-    // In a real app, you'd check a password. Here we just log them in.
-    setUser({ name: username });
+  const handleLogin = (userData) => {
+    // userData is the full { _id, email, role, token } object from the server
+    
+    // 1. Save the token
+    setToken(userData.token); 
+    
+    // 2. Save the user object
+    setUser(userData);
+    
+    // 3. Navigate to the dashboard
     setPage('dashboard');
   };
 
@@ -31,6 +36,8 @@ export default function App() {
    * Clears the user and returns to the login page.
    */
   const handleLogout = () => {
+    // Clear both the token and the user object
+    setToken(null);
     setUser(null);
     setPage('login');
   };
@@ -50,6 +57,7 @@ export default function App() {
         return (
           <StudentDashboard
             user={user}
+            token={token} // <-- ADD THIS LINE
             onNewRequest={() => setPage('newRequest')}
             onLogout={handleLogout}
           />
@@ -58,8 +66,9 @@ export default function App() {
       case 'newRequest':
         return (
           <NewRequestForm
-            onSubmit={() => setPage('dashboard')} // Go back to dashboard on submit
-            onCancel={() => setPage('dashboard')} // Go back to dashboard on cancel
+            onSubmit={() => setPage('dashboard')}
+            onCancel={() => setPage('dashboard')}
+            token={token} // <-- ADD THIS LINE
           />
         );
       

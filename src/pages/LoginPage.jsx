@@ -6,20 +6,57 @@ export default function LoginPage({ onLogin }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (email.trim()) {
-      // In a real app, this would be more complex.
-      // For now, we just pass the email up to the App component.
-      onLogin(email.trim());
-    }
-  };
+  const [error, setError] = useState(null);
+  const [loading, setLoading] = useState(false);
 
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError(null); // Clear any previous errors
+    setLoading(true); // Disable the button
+
+    try {
+      // Call your backend API endpoint
+      const response = await fetch('http://localhost:5001/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        // Send email and password as a JSON string
+        body: JSON.stringify({ email, password }),
+      });
+
+      const data = await response.json(); // Get the { user, token } or { message }
+
+      if (!response.ok) {
+        // If server responded with an error (e.g., 401 "Invalid password")
+        throw new Error(data.message || 'Login failed. Please try again.');
+      }
+
+      // --- SUCCESS ---
+      // 'data' is the object: { _id, email, role, token }
+      // Pass this full data object up to App.jsx's handleLogin
+      onLogin(data);
+
+    } catch (err) {
+      // This catches network errors or the error we threw
+      setError(err.message);
+      setLoading(false); // Re-enable the button only if there's an error
+    }
+    // We don't set loading to false on success, because the page is about to unmount
+  };
+  // ---------------------------------------------
+
+  // ... in src/pages/LoginPage.jsx
   return (
     <div style={styles.pageCard}>
       <h1 style={styles.header}>FiskFix</h1>
       <h2 style={styles.subheader}>Student & Staff Login</h2>
       <form onSubmit={handleSubmit} style={styles.form}>
+
+        {/* This will display any login errors */}
+        {error && <p style={styles.errorText}>{error}</p>}
+
+        {/* --- START: ADD THESE INPUTS BACK --- */}
         <div style={styles.inputGroup}>
           <label htmlFor="email" style={styles.label}>Email Address</label>
           <input
@@ -44,18 +81,32 @@ export default function LoginPage({ onLogin }) {
             required
           />
         </div>
-        <button type="submit" style={styles.buttonPrimary}>
-          Sign In
+        {/* --- END: ADD THESE INPUTS BACK --- */}
+
+        <button 
+          type="submit" 
+          style={loading ? styles.buttonDisabled : styles.buttonPrimary} 
+          disabled={loading}
+        >
+          {loading ? 'Signing In...' : 'Sign In'}
         </button>
+        
       </form>
     </div>
   );
 }
+const baseButtonStyles = {
+  border: 'none',
+  borderRadius: '6px',
+  padding: '12px 16px',
+  fontSize: '16px',
+  fontWeight: 600,
+  cursor: 'pointer',
+  marginTop: '8px',
+  width: '100%', // Make button full width
+};
 
-// ------------------------------------
-// STYLES OBJECT
-// We use this to style our components without a CSS file.
-// ------------------------------------
+// Now, define the main styles object
 const styles = {
   pageCard: {
     backgroundColor: '#ffffff',
@@ -63,7 +114,7 @@ const styles = {
     boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
     padding: '24px 32px',
     width: '100%',
-    maxWidth: '450px', // Sized for a login form
+    maxWidth: '400px',
   },
   header: {
     color: '#1a202c',
@@ -101,17 +152,26 @@ const styles = {
     fontSize: '16px',
     border: '1px solid #cbd5e0',
     borderRadius: '6px',
-    boxSizing: 'border-box', // Important for padding to work correctly
+    boxSizing: 'border-box',
   },
+  // Use the base style and add the primary color
   buttonPrimary: {
+    ...baseButtonStyles,
     backgroundColor: '#3182ce',
     color: 'white',
-    border: 'none',
-    borderRadius: '6px',
-    padding: '12px 16px',
-    fontSize: '16px',
-    fontWeight: 600,
-    cursor: 'pointer',
-    marginTop: '8px',
+  },
+  // This is the new style we added
+  errorText: {
+    color: '#e53e3e',
+    fontSize: '14px',
+    textAlign: 'center',
+    marginBottom: '16px',
+  },
+  // Use the base style and add the disabled color
+  buttonDisabled: {
+    ...baseButtonStyles,
+    backgroundColor: '#a0aec0',
+    cursor: 'not-allowed',
+    color: '#ffffff',
   },
 };

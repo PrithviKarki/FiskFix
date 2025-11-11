@@ -1,27 +1,91 @@
-import React from 'react';
+// File: src/pages/StudentDashboard.jsx
 
-// This is a standalone component for your Student Dashboard Page.
-// It will be imported by your main App.jsx file.
-export default function StudentDashboard({ user, onNewRequest, onLogout }) {
-  
-  // Mock data for existing requests, based on your wireframe
-  const mockRequests = [
-    { id: '001', title: 'Leaking Faucet', status: 'In Progress', room: 'Jubilee 101' },
-    { id: '002', title: 'Window stuck', status: 'Completed', room: 'New Living 302' },
-    { id: '003', title: 'Heater not working', status: 'Submitted', room: 'Jubilee 101' },
-  ];
+import React, { useState, useEffect } from 'react';
 
-  // Helper function to get the correct style for a status
+// We now accept 'token' as a prop
+export default function StudentDashboard({ user, token, onNewRequest, onLogout }) {
+  // --- STATE ---
+  // We'll store our real requests here
+  const [requests, setRequests] = useState([]); 
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  // --- DATA FETCHING ---
+  /**
+   * This "effect" hook runs once when the component loads.
+   * Its job is to fetch the data from our new API endpoint.
+   */
+  useEffect(() => {
+    // Define the async function to fetch data
+    const fetchMyRequests = async () => {
+      try {
+        setError(null);
+        setLoading(true);
+
+        const response = await fetch('http://localhost:5001/api/workorders/mine', {
+          method: 'GET',
+          headers: {
+            // We must send our token to prove who we are!
+            'Authorization': `Bearer ${token}`,
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to fetch requests.');
+        }
+
+        const data = await response.json();
+        setRequests(data); // Save the real data!
+
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    // Call the function
+    fetchMyRequests();
+
+  }, [token]); // The dependency array [token] ensures this re-runs if the token changes
+
+  // --- RENDER LOGIC ---
+
   const getStatusStyle = (status) => {
     if (status === 'In Progress') return { ...styles.statusBadge, ...styles.statusInProgress };
     if (status === 'Completed') return { ...styles.statusBadge, ...styles.statusCompleted };
     return { ...styles.statusBadge, ...styles.statusSubmitted };
   };
 
+  // Helper function to render the list of requests
+  const renderRequests = () => {
+    if (loading) {
+      return <p style={styles.requestInfo}>Loading your requests...</p>;
+    }
+    if (error) {
+      return <p style={styles.requestInfo}>{error}</p>;
+    }
+    if (requests.length === 0) {
+      return <p style={styles.requestInfo}>You have no active maintenance requests.</p>;
+    }
+    
+    // We now map over the real 'requests' from state, not 'mockRequests'
+    return requests.map(req => (
+      <div key={req._id} style={styles.requestCard}>
+        <div>
+          <p style={styles.requestTitle}>{req.title}</p>
+          <p style={styles.requestInfo}>Room: {req.building} {req.room}</p>
+          <p style={styles.requestInfo}>Submitted: {new Date(req.createdAt).toLocaleDateString()}</p>
+        </div>
+        <span style={getStatusStyle(req.status)}>{req.status}</span>
+      </div>
+    ));
+  };
+
   return (
     <div style={styles.pageContainer}>
       <header style={styles.dashboardHeader}>
-        <h1 style={styles.header}>Welcome, {user ? user.name.split('@')[0] : 'Student'}!</h1>
+        <h1 style={styles.header}>Welcome, {user ? user.email.split('@')[0] : 'Student'}!</h1>
         <button onClick={onLogout} style={styles.buttonSecondary}>Logout</button>
       </header>
 
@@ -33,44 +97,27 @@ export default function StudentDashboard({ user, onNewRequest, onLogout }) {
       </div>
 
       <div style={styles.requestList}>
-        {mockRequests.length > 0 ? (
-          mockRequests.map(req => (
-            <div key={req.id} style={styles.requestCard}>
-              <div>
-                <p style={styles.requestTitle}>{req.title}</p>
-                <p style={styles.requestInfo}>Room: {req.room}</p>
-              </div>
-              <span style={getStatusStyle(req.status)}>{req.status}</span>
-            </div>
-          ))
-        ) : (
-          <p style={styles.requestInfo}>You have no active maintenance requests.</p>
-        )}
+        {renderRequests()}
       </div>
     </div>
   );
 }
 
-// ------------------------------------
-// STYLES OBJECT
-// ------------------------------------
+// --- STYLES ---
+// (These are the same as before, with a few minor tweaks)
+const baseButtonStyles = {
+  border: 'none',
+  borderRadius: '6px',
+  padding: '12px 16px',
+  fontSize: '16px',
+  fontWeight: 600,
+  cursor: 'pointer',
+};
+
 const styles = {
   pageContainer: {
     width: '100%',
     maxWidth: '800px',
-  },
-  header: {
-    color: '#1a202c',
-    fontSize: '24px',
-    fontWeight: 600,
-    margin: 0,
-    marginBottom: '8px',
-  },
-  subheader: {
-    color: '#4a5568',
-    fontSize: '18px',
-    fontWeight: 400,
-    margin: 0,
   },
   dashboardHeader: {
     display: 'flex',
@@ -78,11 +125,33 @@ const styles = {
     alignItems: 'center',
     marginBottom: '24px',
   },
+  header: {
+    color: '#1a202c',
+    fontSize: '24px',
+    fontWeight: 600,
+    margin: 0,
+  },
+  subheader: {
+    color: '#4a5568',
+    fontSize: '20px',
+    fontWeight: 500,
+    margin: 0,
+  },
   dashboardActions: {
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: '16px',
+  },
+  buttonPrimary: {
+    ...baseButtonStyles,
+    backgroundColor: '#3182ce',
+    color: 'white',
+  },
+  buttonSecondary: {
+    ...baseButtonStyles,
+    backgroundColor: '#e2e8f0',
+    color: '#2d3748',
   },
   requestList: {
     display: 'flex',
@@ -99,53 +168,33 @@ const styles = {
     alignItems: 'center',
   },
   requestTitle: {
-    fontSize: '16px',
+    fontSize: '18px',
     fontWeight: 600,
     color: '#2d3748',
-    margin: 0,
+    margin: '0 0 4px 0',
   },
   requestInfo: {
     fontSize: '14px',
-    color: '#718096',
+    color: '#4a5568',
     margin: 0,
   },
   statusBadge: {
     padding: '4px 12px',
     borderRadius: '12px',
     fontSize: '12px',
-    fontWeight: 600,
+    fontWeight: 500,
     textTransform: 'uppercase',
   },
   statusSubmitted: {
-    backgroundColor: '#e2e8f0',
+    backgroundColor: '#f0f0f0',
     color: '#4a5568',
   },
   statusInProgress: {
-    backgroundColor: '#fefcbf', // yellow-200
-    color: '#975a16', // yellow-800
+    backgroundColor: '#fefcbf',
+    color: '#92400e',
   },
   statusCompleted: {
-    backgroundColor: 'rgba(198, 246, 213, 1)', // green-200
-    color: 'rgba(47, 133, 90, 1)', // green-800
-  },
-  buttonPrimary: {
-    backgroundColor: '#3182ce',
-    color: 'white',
-    border: 'none',
-    borderRadius: '6px',
-    padding: '10px 16px',
-    fontSize: '14px',
-    fontWeight: 600,
-    cursor: 'pointer',
-  },
-  buttonSecondary: {
-    backgroundColor: '#e2e8f0',
-    color: '#2d3748',
-    border: 'none',
-    borderRadius: '6px',
-    padding: '10px 16px',
-    fontSize: '14px',
-    fontWeight: 600,
-    cursor: 'pointer',
+    backgroundColor: '#c6f6d5',
+    color: '#2f855a',
   },
 };
