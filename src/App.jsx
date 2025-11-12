@@ -5,6 +5,7 @@ import React, { useState } from 'react';
 import LoginPage from './pages/LoginPage.jsx';
 import StudentDashboard from './pages/StudentDashboard.jsx';
 import NewRequestForm from './pages/NewRequestForm.jsx';
+import AdminDashboard from './pages/AdminDashboard.jsx';
 
 // This is the "control center" component
 export default function App() {
@@ -53,7 +54,19 @@ export default function App() {
       case 'login':
         return <LoginPage onLogin={handleLogin} />;
       
+    
       case 'dashboard':
+        // Check the user's role
+        if (user && (user.role === 'rd' || user.role === 'maintenance')) {
+          // If they are an admin, show the AdminDashboard
+          return (
+            <AdminDashboard
+              user={user}
+              token={token}
+              onLogout={handleLogout}
+            />
+          );
+        }
         return (
           <StudentDashboard
             user={user}

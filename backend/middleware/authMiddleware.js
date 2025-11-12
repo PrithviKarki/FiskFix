@@ -3,7 +3,7 @@
 import jwt from 'jsonwebtoken';
 import User from '../models/userModel.js';
 
-// This is the "gatekeeper" function
+// --- PROTECT FUNCTION (FIRST) ---
 const protect = async (req, res, next) => {
   let token;
 
@@ -20,7 +20,6 @@ const protect = async (req, res, next) => {
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
       // 4. Find the user from the token's ID and attach them to the request
-      // This is the key part: req.user will now exist for all protected routes
       req.user = await User.findById(decoded.id).select('-password');
 
       // 5. Continue to the next step (the actual route)
@@ -36,4 +35,20 @@ const protect = async (req, res, next) => {
   }
 };
 
-export { protect };
+// --- ADMIN FUNCTION (SECOND) ---
+// This function must be SEPARATE from and AFTER the 'protect' function.
+// Do NOT paste this inside the 'protect' function's { ... }
+const admin = (req, res, next) => {
+  if (req.user && (req.user.role === 'rd' || req.user.role === 'maintenance')) {
+    // If user is 'rd' OR 'maintenance', they are an admin.
+    next(); // Continue to the route
+  } else {
+    // If they are 'student' or 'ra', block them
+    res.status(401).json({ message: 'Not authorized as an admin' });
+  }
+};
+
+// --- EXPORT (LAST) ---
+// This export line is at the very bottom of the file
+// and can now see both 'protect' and 'admin'
+export { protect, admin };
