@@ -1,14 +1,14 @@
 // File: src/pages/AdminDashboard.jsx
 
 import React, { useState, useEffect } from 'react';
-
+import WorkOrderModal from '../components/WorkOrderModal.jsx';
 // This is the new component for the Admin/RD dashboard
 export default function AdminDashboard({ user, token, onLogout }) {
   // --- STATE ---
   const [requests, setRequests] = useState([]); // To hold ALL work orders
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-
+  const [selectedRequest, setSelectedRequest] = useState(null);
   // --- DATA FETCHING ---
   /**
    * This effect runs once on load to get all work orders
@@ -117,7 +117,11 @@ export default function AdminDashboard({ user, token, onLogout }) {
         </thead>
         <tbody>
           {requests.map(req => (
-            <tr key={req._id} style={styles.tableRow}>
+            <tr 
+            key={req._id} 
+            style={{...styles.tableRow, cursor: 'pointer'}} 
+            onClick={() => setSelectedRequest(req)}
+          >
               <td style={styles.tableCell}>{req.submittedBy ? req.submittedBy.email : 'N/A'}</td>
               <td style={styles.tableCell}>{req.building} {req.room}</td>
               <td style={styles.tableCell}>{req.title}</td>
@@ -130,7 +134,10 @@ export default function AdminDashboard({ user, token, onLogout }) {
                 {req.status !== 'In Progress' && (
                   <button 
                     style={styles.actionButton}
-                    onClick={() => handleUpdateStatus(req._id, 'In Progress')}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleUpdateStatus(req._id, 'In Progress');
+                    }}
                   >
                     Start
                   </button>
@@ -138,7 +145,11 @@ export default function AdminDashboard({ user, token, onLogout }) {
                 {req.status !== 'Completed' && (
                   <button 
                     style={{...styles.actionButton, ...styles.completeButton}}
-                    onClick={() => handleUpdateStatus(req._id, 'Completed')}
+                    // --- ADD e.stopPropagation() ---
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleUpdateStatus(req._id, 'Completed');
+                    }}
                   >
                     Complete
                   </button>
@@ -165,6 +176,13 @@ export default function AdminDashboard({ user, token, onLogout }) {
         <h2 style={styles.subheader}>All Work Orders</h2>
         {renderContent()}
       </div>
+      {selectedRequest && (
+    <WorkOrderModal 
+      request={selectedRequest}
+      onClose={() => setSelectedRequest(null)}
+    />
+  )}
+  
     </div>
   );
 }

@@ -1,6 +1,7 @@
 // File: src/pages/StudentDashboard.jsx
 
 import React, { useState, useEffect } from 'react';
+import WorkOrderModal from '../components/WorkOrderModal.jsx';
 
 // We now accept 'token' as a prop
 export default function StudentDashboard({ user, token, onNewRequest, onLogout }) {
@@ -9,7 +10,7 @@ export default function StudentDashboard({ user, token, onNewRequest, onLogout }
   const [requests, setRequests] = useState([]); 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-
+  const [selectedRequest, setSelectedRequest] = useState(null);
   // --- DATA FETCHING ---
   /**
    * This "effect" hook runs once when the component loads.
@@ -72,6 +73,11 @@ export default function StudentDashboard({ user, token, onNewRequest, onLogout }
     // We now map over the real 'requests' from state, not 'mockRequests'
     return requests.map(req => (
       <div key={req._id} style={styles.requestCard}>
+        <div 
+        key={req._id} 
+        style={{...styles.requestCard, cursor: 'pointer'}} 
+        onClick={() => setSelectedRequest(req)}
+        ></div>
         <div>
           <p style={styles.requestTitle}>{req.title}</p>
           <p style={styles.requestInfo}>Room: {req.building} {req.room}</p>
@@ -99,6 +105,12 @@ export default function StudentDashboard({ user, token, onNewRequest, onLogout }
       <div style={styles.requestList}>
         {renderRequests()}
       </div>
+      {selectedRequest && (
+    <WorkOrderModal 
+      request={selectedRequest}
+      onClose={() => setSelectedRequest(null)}
+    />
+  )}
     </div>
   );
 }
